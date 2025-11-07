@@ -1,0 +1,13 @@
+[Unit]
+Description=RPi AD capture (no-delete)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/rpi_cap_no_del.sh
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

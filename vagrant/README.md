@@ -4,6 +4,6 @@ It also can be a attack surface as one can run scripts (such as BadBlood) to mak
 
 **please read and understand all the file as some of the work require manual configuration**
 
-				**I have done all the hard work and everything is tested**
+**I have done all the hard work and everything is tested**
 		
 **ENJOY**

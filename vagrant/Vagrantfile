@@ -134,7 +134,8 @@ Vagrant.configure("2") do |cfg|
       config.vm.provision "shell", reboot: true
 
       # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
-    # config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
-    # config.vm.provision "shell", reboot: true
+      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
+      #config.vm.provision "shell", reboot: true
+
     end
 end

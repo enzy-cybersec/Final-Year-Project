@@ -85,10 +85,6 @@ Vagrant.configure("2") do |cfg|
       #Run sysprep before joining the domain (needed because the SIDs are identical on Vagrant Cloud images)
       config.vm.provision "windows-sysprep"
 
-      #Install Chocolatey - This can be used to install any other tools we may need
-      #config.vm.provision "install-choco", type: "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/install-choco.ps1"
-      #config.vm.provision "shell", reboot: true
-
       #Configure keyboard/language/timezone etc.
       config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
       config.vm.provision "shell", reboot: true
@@ -98,9 +94,10 @@ Vagrant.configure("2") do |cfg|
       config.vm.provision "shell", reboot: true
 
       # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
-      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/svr01.ps1"
-      #config.vm.provision "shell", reboot: true
+      # config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/svr01.ps1"
+      # config.vm.provision "shell", reboot: true
     end
+
     #This is a workstation.
     cfg.vm.define "workstation1" do |config|
       config.vm.box = "StefanScherer/windows_2019"
@@ -137,7 +134,7 @@ Vagrant.configure("2") do |cfg|
       config.vm.provision "shell", reboot: true
 
       # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
-      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
-      #config.vm.provision "shell", reboot: true
+    # config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
+    # config.vm.provision "shell", reboot: true
     end
 end

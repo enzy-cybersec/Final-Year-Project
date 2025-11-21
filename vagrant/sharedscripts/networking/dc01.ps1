@@ -1,9 +1,9 @@
 param(
-    [string]$DCIP = "192.168.56.100"
+    [string]$DCIP = "192.168.56.10"
 )
 
 if (!$DCIP) {
-	$DCIP = "192.168.56.100"
+	$DCIP = "192.168.56.10"
 }
 
 $domainName      = "fyp.lab"

@@ -1,36 +1,14 @@
-﻿#Importing AD modules
+﻿# Import AD module
 Import-Module ActiveDirectory
 
-#define domain paths
+# Get domain distinguished name
 $DomainDN = (Get-ADDomain).DistinguishedName
-$UsersOU = (Get-ADOrganizationalUnit -Filter "Name -eq 'Users'").DistinguishedName
 
+# Get the base OU 'CorpUsers'
+$UsersOUObj = Get-ADOrganizationalUnit -Filter "Name -eq 'CorpUsers'" -SearchBase $DomainDN -ErrorAction SilentlyContinue
+$UsersOU = $UsersOUObj.DistinguishedName
 
-#define department structure
-$Departments = @(
-    "IT",
-    "HR",
-    "Finance",
-    "Sales",
-    "Marketing"
-)
-
-#ensure department OUs exist
-foreach ($dept in $Departments) {
-
-    $DeptOU = "OU=$dept,$UsersOU"
-
-    $ExistingDept = Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$DeptOU'" -ErrorAction SilentlyContinue
-
-    if (-not $ExistingDept) {
-        New-ADOrganizationalUnit -Name $dept -Path $UsersOU
-        Write-Host "Created OU: $dept"
-    } else {
-        Write-Host "OU already exists: $dept"
-    }
-}
-
-#define users 
+# Define users per department
 $Users = @{
     IT = @("j.smith","a.khan","m.ali","s.admin","t.dev")
     HR = @("l.brown","e.jones","h.wilson")
@@ -39,17 +17,14 @@ $Users = @{
     Marketing = @("n.martin","o.lee","g.walker")
 }
 
-#define placeholder password
+# Set a placeholder password
 $Password = ConvertTo-SecureString "TempP@ssw0rd!" -AsPlainText -Force
 
-#create users
+# Create users
 foreach ($dept in $Users.Keys) {
-
-    $DeptOU = "OU=$dept,$UsersOU"
-
     foreach ($username in $Users[$dept]) {
-
-        if (Get-ADUser -Filter "SamAccountName -eq '$username'" -ErrorAction SilentlyContinue) {
+        $existingUser = Get-ADUser -Filter "SamAccountName -eq '$username'" -ErrorAction SilentlyContinue
+        if ($existingUser) {
             Write-Host "User exists: $username"
             continue
         }
@@ -61,12 +36,12 @@ foreach ($dept in $Users.Keys) {
             -AccountPassword $Password `
             -Enabled $true `
             -PasswordNeverExpires $true `
-            -Path $DeptOU
+            -Path $DeptOUs[$dept]
 
         Write-Host "Created user: $username ($dept)"
     }
 }
 
-#validation
-Get-ADUser -SearchBase "OU=Users,DC=fyp,DC=lab" -Filter *
-
+# Validation: list all users under CorpUsers
+Write-Host "`nUsers in 'CorpUsers' OU:"
+Get-ADUser -SearchBase $UsersOU -Filter * | Select Name, SamAccountName, DistinguishedName

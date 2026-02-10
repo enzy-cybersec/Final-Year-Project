@@ -1,35 +1,29 @@
-﻿#Load AD module
+﻿# Load the Active Directory module
 Import-Module ActiveDirectory
 
-#Defining domain context
+# Define domain context
 $DomainDN = (Get-ADDomain).DistinguishedName
 $ServiceOU = "OU=ServiceAccounts,$DomainDN"
 
-#Defining Service accounts with the passwords
+# Ensure the ServiceAccounts OU exists
+$OU = Get-ADOrganizationalUnit -Filter "Name -eq 'ServiceAccounts'" -ErrorAction SilentlyContinue
+if (-not $OU) {
+    $OU = New-ADOrganizationalUnit -Name "ServiceAccounts" -Path $DomainDN
+    Write-Host "Created OU: ServiceAccounts"
+} else {
+    Write-Host "Base OU 'ServiceAccounts' found."
+}
+
+# Define service accounts
 $ServiceAccounts = @(
-    @{
-        Name = "svc_iis"
-        Description = "IIS Web Service Account"
-        Password = "P@ssw0rd123!"
-    },
-    @{
-        Name = "svc_files"
-        Description = "File Server Service Account"
-        Password = "P@ssw0rd123!"
-    },
-    @{
-        Name = "svc_backup"
-        Description = "Backup and Scheduled Tasks Account"
-        Password = "P@ssw0rd123!"
-    }
+    @{ Name="svc_iis"; Description="IIS Web Service Account"; Password="P@ssw0rd123!" },
+    @{ Name="svc_files"; Description="File Server Service Account"; Password="P@ssw0rd123!" },
+    @{ Name="svc_backup"; Description="Backup and Scheduled Tasks Account"; Password="P@ssw0rd123!" }
 )
 
-
-#Creating accounts
+# Create accounts
 foreach ($acct in $ServiceAccounts) {
-
     $Existing = Get-ADUser -Filter "SamAccountName -eq '$($acct.Name)'" -ErrorAction SilentlyContinue
-
     if ($Existing) {
         Write-Host "Service account already exists: $($acct.Name)"
         continue
@@ -57,5 +51,6 @@ foreach ($acct in $ServiceAccounts) {
     }
 }
 
-#Validation
-Get-ADUser -SearchBase "OU=ServiceAccounts,DC=fyp,DC=lab" -Filter *
+# Validation
+Write-Host "`nService accounts in '$ServiceOU':"
+Get-ADUser -SearchBase $ServiceOU -Filter * | Select-Object Name, SamAccountName, Enabled

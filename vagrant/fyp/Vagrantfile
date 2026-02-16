@@ -1,0 +1,141 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |cfg|
+
+    #fqdn = "fyp.loc"
+    #root_netbios = "FYP"
+
+    dc_name = "DC01"
+    dc_ip = "192.168.56.100"
+
+    server_name = "SVR1"
+    server_ip = "192.168.56.150"
+
+    wks_name = "WRK1"
+    wks_ip = "192.168.56.200"
+
+    #This is a domain controller with standard configuration.
+    cfg.vm.define "domaincontroller" do |config|
+      config.vm.box = "StefanScherer/windows_2019"
+      config.vm.hostname = dc_name
+
+      # Use the plaintext WinRM transport and force it to use basic authentication.
+      # NB this is needed because the default negotiate transport stops working
+      # after the domain controller is installed.
+      # see https://groups.google.com/forum/#!topic/vagrant-up/sZantuCM0q4
+      config.winrm.transport = :plaintext
+      config.winrm.basic_auth_only = true
+      config.winrm.retry_limit = 30
+      config.winrm.retry_delay = 10
+      
+      config.vm.provider :virtualbox do |v, override|
+        v.gui = true
+        v.cpus = 2
+        v.memory = 2048
+        v.customize ["modifyvm", :id, "--vram", 64]
+      end
+      
+      config.vm.network :private_network,
+        :ip => dc_ip
+
+      # Configure keyboard/language/timezone etc.
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", reboot: true
+
+      # Configure DNS and domain Creation / this will fail if you run it from here! please run it manually 
+      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/dc01.ps1"
+      #config.vm.provision "shell", reboot: true
+
+      #disabling ipv6               
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no>
+      config.vm.provision "shell", reboot: true
+      
+      #reconfiguring private interface
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/ethernet2-fix.ps1"
+      config.vm.provision "shell", reboot: true
+    end
+
+
+    #This is a simple server that is domain joined. It can be used to host various web applications
+    cfg.vm.define "server1" do |config|
+
+      config.vm.box = "StefanScherer/windows_2019"
+      config.vm.hostname = server_name
+
+      # use the plaintext WinRM transport and force it to use basic authentication.
+      # NB this is needed because the default negotiate transport stops working
+      #    after the domain controller is installed.
+      #    see https://groups.google.com/forum/#!topic/vagrant-up/sZantuCM0q4
+      config.winrm.transport = :plaintext
+      config.winrm.basic_auth_only = true
+      config.winrm.retry_limit = 30
+      config.winrm.retry_delay = 10
+
+      config.vm.provider :virtualbox do |v, override|
+        v.linked_clone = true
+        v.cpus = 2
+        v.memory = 2048
+        v.customize ["modifyvm", :id, "--vram", 64]
+        # v.customize ["modifyvm", :id, "--clipboard-mode", "bidirectional"]
+      end
+
+      config.vm.network :private_network,
+        :ip => server_ip
+
+      #Run sysprep before joining the domain (needed because the SIDs are identical on Vagrant Cloud images)
+      config.vm.provision "windows-sysprep"
+
+      #Configure keyboard/language/timezone etc.
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", reboot: true
+
+      #disabling ipv6
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no-ipv6.ps1"
+      config.vm.provision "shell", reboot: true
+
+      # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
+      # config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/svr01.ps1"
+      # config.vm.provision "shell", reboot: true
+    end
+
+    #This is a workstation.
+    cfg.vm.define "workstation1" do |config|
+      config.vm.box = "StefanScherer/windows_2019"
+
+      config.vm.hostname = wks_name
+
+      # use the plaintext WinRM transport and force it to use basic authentication.
+      # NB this is needed because the default negotiate transport stops working
+      # after the domain controller is installed.
+      # see https://groups.google.com/forum/#!topic/vagrant-up/sZantuCM0q4
+      config.winrm.transport = :plaintext
+      config.winrm.basic_auth_only = true
+      config.winrm.retry_limit = 30
+      config.winrm.retry_delay = 10
+
+      config.vm.provider :virtualbox do |v, override|
+        v.gui = true
+        v.cpus = 2
+        v.memory = 4096
+        v.customize ["modifyvm", :id, "--vram", 64]
+      end
+
+      config.vm.network :private_network,
+        :ip => wks_ip
+
+      # Run sysprep before joining the domain (needed because the SIDs are identical on Vagrant Cloud images)
+      config.vm.provision "windows-sysprep"
+
+      # Configure keyboard/language/timezone etc.
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", reboot: true
+
+      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no-ipv6.ps1"
+      config.vm.provision "shell", reboot: true
+
+      # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
+      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
+      #config.vm.provision "shell", reboot: true
+
+    end
+end

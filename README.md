@@ -13,6 +13,14 @@ This project has several parts:
 **7. Analysing the results**  
 **8. developing a report based on the results**  
 
+# Map of the Networks
+**In the both networks, L3 switch is been used for inter vlan routing and VMs are directly set to ethernet cable to the phisical network**  
+<img width="445" height="363" alt="ADnormal-edit" src="https://github.com/user-attachments/assets/9e818f8f-9423-4f9d-bda0-a1718b51f7d6" />  
+This network is for the Normal Enterprise traffic capturing and all the AD VMs are in the same vlan and the switch is using SPAN to copy all packets and send them to the NIDS (RPi5).  
+<img width="445" height="363" alt="ADattacker-edit" src="https://github.com/user-attachments/assets/5e23b1e7-abb3-4ddb-b63d-9d5d0453cf2c" />  
+This network is for the Normal Enterprise traffic capturing and all the AD VMs are in the same vlan while the attacker can only access the SVR1 and the switch is using SPAN to copy all packets and send them to the NIDS (RPi5).  
+**The normal network traffic and one of the attack traffics are used for model training while another attack traffic is used for testing the models.**
+
 # Map of the Scripts
 
 ```

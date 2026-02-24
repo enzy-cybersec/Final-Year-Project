@@ -20,7 +20,8 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 <img width="445" height="363" alt="ADattacker-edit" src="https://github.com/user-attachments/assets/5e23b1e7-abb3-4ddb-b63d-9d5d0453cf2c" />  
 This network is for the Normal Enterprise traffic capturing and all the AD VMs are in the same vlan while the attacker can only access the SVR1 and the switch is using SPAN to copy all packets and send them to the NIDS (RPi5).  
 **The normal network traffic and one of the attack traffics are used for model training while another attack traffic is used for testing the models.**
-
+  
+**Please note that setting up these networks requires knowlege of networking specially DNS**  
 # Map of the Scripts
 
 ```
@@ -53,11 +54,11 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	│           └── README.md
 	│
 	└── WRK01/
-	      ├── PhaseB_Machine_Behavior/
+	      ├── PhaseB_Machine_Behaviour/
 	      │   ├── GPO_Refresh.ps1
 	      │   ├── Machine_Auth.ps1
 	      │
-	      ├── PhaseC_User_Behavior/
+	      ├── PhaseC_User_Behaviour/
 	      │   ├── Morning_Logons.ps1
 	      │   ├── Login_Loops.ps1
 	      │   └── Interactive_Use.ps1
@@ -68,4 +69,10 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	      │
 	      └── PhaseE_Background_Noise/
 	             └── Periodic_AD_Queries.ps1
-```
+```  
+# How to use the scripts  
+In order to use the scripts you will need to use the AD setup scripts first and then move to the population.  
+**The noise and behaviour based scripts is only for the NIDS to capture the normal traffic both in the normal network and while attack**  
+**Please use the vulnerability scripts on AD for attack networks not the normal one**  
+**The best aproch is to have 3 cloned AD sets for each network**  
+**One also can use the setup for AD pentesting practice**  

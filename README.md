@@ -67,8 +67,12 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	      │   ├── SMB_Usage.ps1
 	      │   └── Web_Requests.ps1
 	      │
-	      └── PhaseE_Background_Noise/
-	             └── Periodic_AD_Queries.ps1
+	      ├── PhaseE_Background_Noise/
+	      │      └── Periodic_AD_Queries.ps1
+	      │
+	      └── Scheduler
+	             ├── Scheduler.ps1
+	             └── Scheduler_System.ps1
 ```  
 # How to use the scripts  
 In order to use the scripts you will need to use the AD setup scripts first and then move to the population.  

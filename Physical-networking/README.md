@@ -67,11 +67,8 @@ no shut
 exit
 
 monitor session 1 source interface fa0/10 both
-```
 
 # ACL logic
-
-```
 ip access-list extended attack-svr
 permit ip 192.168.66.0 0.0.0.255 host 192.168.56.100
 deny ip 192.168.66.0 0.0.0.255 192.168.56.0 0.0.0.255

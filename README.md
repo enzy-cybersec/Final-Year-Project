@@ -22,8 +22,8 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 **The normal network traffic and one of the attack traffics are used for model training while another attack traffic is used for testing the models.**
   
 **Please note that setting up these networks requires knowlege of networking specially DNS**  
-# Map of the Scripts
-
+# Map of the AD Scripts
+**Note that you will find more scripts based on the needs in the path ```vagrant/AD-Scripts```as well**  
 ```
 ├── NIDS
 │	├── rpi-cap-nodel.service
@@ -32,9 +32,9 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 ├── Physical-networking
 │	├── SPAN-Monitor.txt
 │
-└── vagrant/fyp/ad/
+└── vagrant/AD-Scripts/ad/
 	├── DC01/
-	│   └── PhaseA_AD_Population/
+	│   └── Population/
 	│       ├── Create_OUs.ps1
 	│       ├── Create_Department_OUs.ps1
 	│       ├── Create_Users.ps1  
@@ -43,31 +43,31 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	│       ├──  Create_ServiceAccounts.ps1 
 	│       └──README.md
 	│
-	├── SVR01/
-	│   ├── PhaseF_Server_Prep/
+	├── SVR1/
+	│   ├── Server_Prep/
 	│   │   ├── FileServer_Prep.ps1
 	│   │   ├── IIS_Prep.ps1
 	│   │   └── README.md
 	│   │
-	│   └── PhaseE_Background_Noise/
+	│   └── BackgroundNoise/
 	│           ├── Service_Auth.ps1
 	│           └── README.md
 	│
-	└── WRK01/
-	      ├── PhaseB_Machine_Behaviour/
+	└── WRK1/
+	      ├── Machine_Behaviour/
 	      │   ├── GPO_Refresh.ps1
 	      │   ├── Machine_Auth.ps1
 	      │
-	      ├── PhaseC_User_Behaviour/
+	      ├── User_Behaviour/
 	      │   ├── Morning_Logons.ps1
 	      │   ├── Login_Loops.ps1
 	      │   └── Interactive_Use.ps1
 	      │
-	      ├── PhaseD_Work_Activity/
+	      ├── Work_Activity/
 	      │   ├── SMB_Usage.ps1
 	      │   └── Web_Requests.ps1
 	      │
-	      ├── PhaseE_Background_Noise/
+	      ├── Background_Noise/
 	      │      └── Periodic_AD_Queries.ps1
 	      │
 	      └── Scheduler

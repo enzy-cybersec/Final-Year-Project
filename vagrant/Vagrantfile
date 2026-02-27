@@ -39,19 +39,19 @@ Vagrant.configure("2") do |cfg|
         :ip => dc_ip
 
       # Configure keyboard/language/timezone etc.
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/windows/provision-base.ps1"
       config.vm.provision "shell", reboot: true
 
       # Configure DNS and domain Creation / this will fail if you run it from here! please run it manually 
-      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/dc01.ps1"
+      #config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/networking/dc01.ps1"
       #config.vm.provision "shell", reboot: true
 
       #disabling ipv6               
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no>
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/networking/no>
       config.vm.provision "shell", reboot: true
       
       #reconfiguring private interface
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/ethernet2-fix.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/networking/ethernet2-fix.ps1"
       config.vm.provision "shell", reboot: true
     end
 
@@ -86,15 +86,15 @@ Vagrant.configure("2") do |cfg|
       config.vm.provision "windows-sysprep"
 
       #Configure keyboard/language/timezone etc.
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/windows/provision-base.ps1"
       config.vm.provision "shell", reboot: true
 
       #disabling ipv6
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no-ipv6.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/networking/no-ipv6.ps1"
       config.vm.provision "shell", reboot: true
 
       # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
-      # config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/svr01.ps1"
+      # config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/ad/svr01.ps1"
       # config.vm.provision "shell", reboot: true
     end
 
@@ -127,14 +127,14 @@ Vagrant.configure("2") do |cfg|
       config.vm.provision "windows-sysprep"
 
       # Configure keyboard/language/timezone etc.
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/windows/provision-base.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/windows/provision-base.ps1"
       config.vm.provision "shell", reboot: true
 
-      config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/networking/no-ipv6.ps1"
+      config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/networking/no-ipv6.ps1"
       config.vm.provision "shell", reboot: true
 
       # Join the domain and dns setup / needs to be run after the DC is setup completely, so do it manually!
-      #config.vm.provision "shell", path: "sharedscripts/ps.ps1", args: "sharedscripts/ad/wrk01.ps1"
+      #config.vm.provision "shell", path: "AD-Scripts/windows/ps.ps1", args: "AD-Scripts/ad/wrk01.ps1"
       #config.vm.provision "shell", reboot: true
 
     end

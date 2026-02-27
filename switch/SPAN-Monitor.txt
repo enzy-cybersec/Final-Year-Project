@@ -1,9 +1,0 @@
-enable
-configure terminal
-
-monitor session 1 source interface fasternet 0/[port-num] both
-monitor session 1 source interface fasternet 0/[port-num] both
-monitor session 1 destination interface fasternet 0/[port-num]
-
-end 
-write memory

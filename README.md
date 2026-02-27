@@ -25,11 +25,11 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 # Map of the Scripts
 
 ```
-├── RPi5
+├── NIDS
 │	├── rpi-cap-nodel.service
 │	└── rpi_cap_no_del.sh
 │
-├── switch
+├── Physical-networking
 │	├── SPAN-Monitor.txt
 │
 └── vagrant/fyp/ad/

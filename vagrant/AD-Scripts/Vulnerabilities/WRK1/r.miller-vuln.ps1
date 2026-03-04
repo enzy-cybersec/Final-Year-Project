@@ -1,0 +1,1 @@
+﻿net localgroup Administrators "FYP\r.miller" /add

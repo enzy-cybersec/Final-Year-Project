@@ -1,4 +1,4 @@
-﻿# Import AD module
+# Import AD module
 Import-Module ActiveDirectory
 
 # Define the Groups OU
@@ -37,4 +37,5 @@ foreach ($group in $Groups) {
         Write-Host "Group already exists: $group"
     }
 }
+
 

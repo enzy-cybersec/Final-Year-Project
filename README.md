@@ -83,6 +83,7 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 5. Kerberoasting attack
 6. AD enumration terraffic (e.g bloodhound) 
 <img width="611" height="404" alt="Attack" src="https://github.com/user-attachments/assets/b5174b3e-d15b-44c8-a11d-cd5468dffb46" />  
+
 # How to use the scripts  
 In order to use the scripts you will need to use the AD setup scripts first and then move to the population.  
 **The noise and behaviour based scripts is only for the NIDS to capture the normal traffic both in the normal network and while attack**  

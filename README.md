@@ -1,6 +1,6 @@
 # Descripotion of the project 
-**comparing machine learning algorithms to reduce false alarms in NIDS in an AD network**  
-This project focuses on Active Directory network security and the goal is to figure out which machine learning algorithem (Logistic Regression, Random Forest, XGBoost, and Isolation Forest), will perform better to identify and reduce false alarms of an NIDS.
+**Studying the Performance of Isolation Forest in an AD Enabled Network**  
+This project focuses on Active Directory network security and the goal is study and understand the behaviour of Isolation Forest model in active directory activated network with examining the false positive rate.  
 
 # Details
 This project has several parts:  
@@ -74,6 +74,16 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	             ├── Scheduler.ps1
 	             └── Scheduler_System.ps1
 ```  
+# Attack methodolog
+**This attack is designed to generate attack traffic in the network layer related to the active directory:**  
+1. SMB based attacks  
+2. Ticket stilling attacks (in this case TGT)  
+3. Password Spray attack
+4. HTTP/DNS tunneling (in this cas HTTP)
+5. Kerberoasting attack
+6. AD enumration terraffic (e.g bloodhound) 
+
+
 # How to use the scripts  
 In order to use the scripts you will need to use the AD setup scripts first and then move to the population.  
 **The noise and behaviour based scripts is only for the NIDS to capture the normal traffic both in the normal network and while attack**  

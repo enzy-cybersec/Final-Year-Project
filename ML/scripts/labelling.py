@@ -1,58 +1,80 @@
 import pandas as pd
+import numpy as np
 
-df = pd.read_csv("/home/enzy/nids_project/data/attack_flows.csv", low_memory=False)
-print(f"Rows before filtering: {len(df)}")
+# ── Step 1: Identifiers ──────────────────────────────────────────────────
+ATTACKER_IP = "192.168.66.100"
+WRK1_IP     = "192.168.56.200"
+DC01_IP     = "192.168.56.10"
+SVR1_IP     = "192.168.56.100"
 
-# ── Step 1: Remove external IPs and hypervisor ───────────────────────────
-HYPERVISOR_IP = "192.168.66.101"
+WEB_PROTOCOLS = ['HTTP', 'HTTPS', 'SSL', 'TLS']
+SMB_PROTOCOLS = ['NETBIOS.SMBV23', 'SMBV1', 'SMBV2', 'SMB']
+DC_SENSITIVE  = WEB_PROTOCOLS + SMB_PROTOCOLS + ['LDAP', 'DCERPC', 'KERBEROS']
 
-def is_valid(ip):
-    return (
-        str(ip).startswith('192.168.56.') or
-        str(ip).startswith('192.168.66.')
-    ) and str(ip) != HYPERVISOR_IP
+def apply_labels(df):
+    # Ensure consistency
+    df['application_name'] = df['application_name'].str.upper()
+    df['label'] = 0
+    
+    # --- HEURISTIC CALCULATION ---
+    # Legitimate SMB writes have high payload density.
+    # Password sprays have low density (just headers/handshakes).
+    # Adding 0.1 to avoid division by zero errors.
+    df['bytes_per_packet'] = df['bidirectional_bytes'] / (df['bidirectional_packets'] + 0.1)
 
-mask = df['src_ip'].apply(is_valid) & df['dst_ip'].apply(is_valid)
-df = df[mask].copy()
-print(f"Rows after filtering: {len(df)}")
+    # 1. Define Boolean Masks
+    is_attacker = (df['src_ip'] == ATTACKER_IP) | (df['dst_ip'] == ATTACKER_IP)
+    is_to_dc    = (df['src_ip'] == DC01_IP)     | (df['dst_ip'] == DC01_IP)
+    is_to_svr1  = (df['src_ip'] == SVR1_IP)     | (df['dst_ip'] == SVR1_IP)
+    is_smb      = df['application_name'].isin(SMB_PROTOCOLS)
+    
+    # 2. APPLICATION LOGIC (Hierarchical)
+    
+    # Rule A: SMB/Web/LDAP to Domain Controller is ALWAYS an attack.
+    bad_dc_proto = df['application_name'].isin(DC_SENSITIVE)
+    df.loc[is_to_dc & bad_dc_proto, 'label'] = 1
+    
+    # Rule B: SVR1 Heuristic Separation
+    # If it's SMB to SVR1, check the density. 
+    # Spray: Small, fast authentication attempts (< 150 bytes per packet).
+    is_low_density = df['bytes_per_packet'] < 150
+    df.loc[is_to_svr1 & is_smb & is_low_density, 'label'] = 1
+    
+    # Rule C: SVR1 Exemption for "Heavy" Traffic
+    # If the bytes per packet are high (> 500), it's a file write/transfer.
+    # We force this to 0 (Normal).
+    is_heavy_traffic = df['bytes_per_packet'] > 500
+    df.loc[is_to_svr1 & is_heavy_traffic, 'label'] = 0
+    
+    # Rule D: THE ATTACKER PRIORITY
+    # Interaction with the attacker machine is always an attack.
+    df.loc[is_attacker, 'label'] = 1
+    
+    return df
 
-# ── Step 2: Define IPs ────────────────────────────────────────────────────
-ATTACKER_IP = "192.168.66.100"  # attacker machine
-WRK1_IP     = "192.168.56.200"  # compromised workstation (Chisel client)
-DC01_IP     = "192.168.56.10"   # domain controller (attack target)
-SVR1_IP     = "192.168.56.100"  # web server (initial access point)
+# ── Step 2: Load, Sanitise, and Save ──────────────────────────────────────
+print("Refining Ground Truth v3: Separating Spray vs Write...")
+df_n = pd.read_csv("/home/enzy/nids_project/data/normal_flows_clean.csv", low_memory=False)
+df_a = pd.read_csv("/home/enzy/nids_project/data/attack_flows_clean.csv", low_memory=False)
 
-df['label'] = 0
+df_n = apply_labels(df_n)
+df_a = apply_labels(df_a)
 
-# Condition 1: Any flow directly involving attacker machine
-# (covers initial SVR1 access + receiving Chisel tunnel from WRK1)
-direct_attack = (
-    (df['src_ip'] == ATTACKER_IP) |
-    (df['dst_ip'] == ATTACKER_IP)
-)
+# Training Set (Purely Benign)
+clean_normal = df_n[df_n['label'] == 0].copy()
+leaked_attacks = df_n[df_n['label'] == 1].copy()
 
-# Condition 2: WRK1 ↔ DC01 — tunnelled attacker traffic
-# Attacker controls WRK1 via Chisel and uses it to attack DC01
-# WRK1 → DC01 appears as legitimate internal traffic but is attacker-controlled
-wrk1_to_dc = (
-    ((df['src_ip'] == WRK1_IP) & (df['dst_ip'] == DC01_IP)) |
-    ((df['src_ip'] == DC01_IP) & (df['dst_ip'] == WRK1_IP))
-)
+train_set = clean_normal.sample(frac=0.8, random_state=42)
+test_set = pd.concat([
+    clean_normal.drop(train_set.index), 
+    leaked_attacks, 
+    df_a
+], ignore_index=True)
 
-# Note: WRK1 ↔ SVR1 is intentionally NOT flagged (legitimate web traffic)
+test_set = test_set.sample(frac=1, random_state=42).reset_index(drop=True)
 
-df.loc[direct_attack | wrk1_to_dc, 'label'] = 1
+train_set.to_csv("/home/enzy/nids_project/data/train_set_v4.csv", index=False)
+test_set.to_csv("/home/enzy/nids_project/data/test_set_v4.csv", index=False)
 
-# ── Step 3: Breakdown ─────────────────────────────────────────────────────
-print(f"\nTotal flows:   {len(df)}")
-print(f"Normal flows:  {(df['label']==0).sum()}")
-print(f"Attack flows:  {(df['label']==1).sum()}")
-print(f"Attack ratio:  {(df['label']==1).sum()/len(df)*100:.1f}%")
-
-print("\nAttack breakdown:")
-print(f"  Direct attacker (66.100):          {direct_attack.sum()}")
-print(f"  Chisel tunnel WRK1↔DC01 (56.200↔56.10): {wrk1_to_dc.sum()}")
-
-# ── Step 4: Save ──────────────────────────────────────────────────────────
-df.to_csv("/home/enzy/nids_project/data/attack_flows_labelled.csv", index=False)
-print("\n[+] Saved: attack_flows_labelled.csv")
+print(f"\n[+] Success: Ground Truth v3 saved.")
+print(f"Attack flows in test set: {test_set['label'].sum()}")

@@ -1,0 +1,72 @@
+import pandas as pd
+
+# ── Step 1: Identifiers ──────────────────────────────────────────────────
+ATTACKER_IP = "192.168.66.100"
+WRK1_IP     = "192.168.56.200"
+DC01_IP     = "192.168.56.10"
+SVR1_IP     = "192.168.56.100"  # Multi-service Server (Web, SMB, Mail)
+
+# Malicious targets for specific protocols
+WEB_PROTOCOLS = ['HTTP', 'HTTPS', 'SSL', 'TLS']
+SMB_PROTOCOLS = ['NETBIOS.SMBV23', 'SMBV1', 'SMBV2', 'SMB']
+# Added LDAP/RPC as these appeared in your FP list as targets for the DC
+DC_SENSITIVE = WEB_PROTOCOLS + SMB_PROTOCOLS + ['LDAP', 'DCERPC', 'KERBEROS']
+
+def apply_labels(df):
+    # Ensure all names are uppercase for consistent matching
+    df['application_name'] = df['application_name'].str.upper()
+    df['label'] = 0
+    
+    # 1. Define Boolean Masks
+    is_attacker = (df['src_ip'] == ATTACKER_IP) | (df['dst_ip'] == ATTACKER_IP)
+    is_to_dc    = (df['src_ip'] == DC01_IP)     | (df['dst_ip'] == DC01_IP)
+    is_to_svr1  = (df['src_ip'] == SVR1_IP)     | (df['dst_ip'] == SVR1_IP)
+    
+    # 2. APPLICATION LOGIC (Hierarchical)
+    
+    # Rule A: Flag sensitive protocols to the Domain Controller
+    bad_dc_proto = df['application_name'].isin(DC_SENSITIVE)
+    df.loc[is_to_dc & bad_dc_proto, 'label'] = 1
+    
+    # Rule B: SVR1 Exemption
+    # We force SVR1 traffic to 0 to ensure legitimate SMB/Mail/Web is baseline.
+    # This happens BEFORE the attacker rule so the attacker rule can override it.
+    df.loc[is_to_svr1, 'label'] = 0
+    
+    # Rule C: THE ATTACKER PRIORITY (The "Fix")
+    # Anything involving the attacker IP is ALWAYS an attack. 
+    # This is placed last so it overrides Rule B.
+    df.loc[is_attacker, 'label'] = 1
+    
+    return df
+
+# ── Step 2: Load, Sanitise, and Save ──────────────────────────────────────
+print("Refining Ground Truth: Prioritising Attacker Traffic...")
+df_n = pd.read_csv("/home/enzy/nids_project/data/normal_flows_clean.csv", low_memory=False)
+df_a = pd.read_csv("/home/enzy/nids_project/data/attack_flows_clean.csv", low_memory=False)
+
+# Apply labelling to BOTH datasets to ensure "Normal" is actually normal
+df_n = apply_labels(df_n)
+df_a = apply_labels(df_a)
+
+# Training Set: Must be 100% Benign (Label 0) for Isolation Forest
+clean_normal = df_n[df_n['label'] == 0].copy()
+leaked_attacks = df_n[df_n['label'] == 1].copy()
+
+# Test Set: Mixed (20% Benign + All identified attacks)
+train_set = clean_normal.sample(frac=0.8, random_state=42)
+test_set = pd.concat([
+    clean_normal.drop(train_set.index), 
+    leaked_attacks, 
+    df_a
+], ignore_index=True)
+
+# Final Shuffle
+test_set = test_set.sample(frac=1, random_state=42).reset_index(drop=True)
+
+# Save
+train_set.to_csv("/home/enzy/nids_project/data/train_set_v3.csv", index=False)
+test_set.to_csv("/home/enzy/nids_project/data/test_set_v3.csv", index=False)
+
+print(f"\n[+] Success: Attacker IP {ATTACKER_IP} is now the top priority.")
+print(f"Attack flows in test set: {test_set['label'].sum()}")

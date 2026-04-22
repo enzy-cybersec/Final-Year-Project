@@ -1,155 +1,279 @@
-Train shape: (18957, 87)
-Test  shape: (145845, 87)
-Test label distribution:
+Train shape: (7108, 87)
+Test  shape: (156613, 87)
+Test ground truth distribution:
  label
-1    138694
-0      7151
+1    151455
+0      5158
 Name: count, dtype: int64
-After cleaning - Train: (18957, 71), Test: (145845, 71)
+After cleaning - Train: (7108, 71), Test: (156613, 71)
 
-Confusion matrix:
- [[  4107   3044]
- [  4372 134322]]
+=== PERFORMANCE METRICS ===
+Confusion Matrix:
+[[  2218   2940]
+ [    53 151402]]
 
-Classification report:
+F1-Score: 0.9902
+False Positive Rate (FPR): 0.5700
+
+Classification Report:
               precision    recall  f1-score   support
 
-           0     0.4844    0.5743    0.5255      7151
-           1     0.9778    0.9685    0.9731    138694
+           0     0.9767    0.4300    0.5971      5158
+           1     0.9810    0.9997    0.9902    151455
 
-    accuracy                         0.9492    145845
-   macro avg     0.7311    0.7714    0.7493    145845
-weighted avg     0.9536    0.9492    0.9512    145845
+    accuracy                         0.9809    156613
+   macro avg     0.9788    0.7148    0.7937    156613
+weighted avg     0.9808    0.9809    0.9773    156613
 
 
-False Positive Rate (FPR): 0.4257
+=== DETAILED FALSE POSITIVE ANALYSIS ===
+Total False Positives found: 2940
 
-=== FALSE POSITIVE ANALYSIS ===
-False positives: 3044
-
-FP by src_ip:
+Top 10 FP by src_ip:
 src_ip
-192.168.56.200               2082
-192.168.56.100                767
-192.168.56.1                   53
-fe80::54be:a082:ff32:1dce      40
-::                             22
-192.168.56.101                 19
-192.168.56.11                  18
-192.168.56.10                  17
-0.0.0.0                        16
-fe80::8aae:f861:ce7c:e1a5       5
+192.168.56.200    2060
+192.168.56.100     809
+192.168.56.1        53
+192.168.56.10       18
 Name: count, dtype: int64
 
-FP by dst_ip:
+Top 10 FP by dst_ip:
 dst_ip
-192.168.56.100     1813
-192.168.56.10       997
-192.168.56.255       32
-ff02::fb             21
-192.168.56.11        21
-ff02::16             19
-224.0.0.251          18
-ff02::2              16
-255.255.255.255      16
-192.168.56.201       14
+192.168.56.100    1861
+192.168.56.10      996
+192.168.56.255      34
+192.168.56.11       21
+192.168.56.201      14
+192.168.56.101      14
 Name: count, dtype: int64
 
-FP by dst_port:
+Top 10 FP by dst_port:
 dst_port
-445      1885
-53        341
-389       216
-49671     133
-0         118
-135       109
-49670      61
-5353       39
-80         37
-138        32
+445      1818
+53        494
+389       189
+49671     108
+0          75
+49670      71
+25         59
+135        48
+138        34
+49668      22
 Name: count, dtype: int64
 
-FP by application_name:
+Top 10 FP by application_name:
 application_name
-NetBIOS.SMBv23      1857
-DCERPC               330
-LDAP                 216
-DNS.Microsoft        169
-DNS.Microsoft365     168
-ICMP                  57
-ICMPV6                49
-MDNS                  39
-HTTP                  37
-NetBIOS.SMBv1         32
+NETBIOS.SMBV23      1772
+DNS.MICROSOFT        264
+DCERPC               236
+LDAP                 189
+DNS.MICROSOFT365     169
+ICMP                  75
+DNS                   61
+SMTP                  59
+SMBV23                46
+NETBIOS.SMBV1         34
 Name: count, dtype: int64
-
-Sample FP flows:
-                src_ip  ... application_category_name
-15050   192.168.56.200  ...                    System
-135127  192.168.56.200  ...                    System
-7637    192.168.56.200  ...                    System
-27528   192.168.56.200  ...                    System
-47728   192.168.56.200  ...                    System
-100747  192.168.56.200  ...                    System
-85327   192.168.56.200  ...                    System
-118111  192.168.56.200  ...                    System
-109776  192.168.56.200  ...                    System
-37450     192.168.56.1  ...                   Network
-
-[10 rows x 9 columns]
-
-=== FALSE POSITIVES: SRC → DST + PROTOCOL ===
-
-Top 15 src_ip → dst_ip pairs (by FP count):
-                   src_ip            dst_ip  count
-           192.168.56.200    192.168.56.100   1812
-           192.168.56.100     192.168.56.10    752
-           192.168.56.200     192.168.56.10    241
-             192.168.56.1     192.168.56.11     21
-fe80::54be:a082:ff32:1dce          ff02::fb     16
-           192.168.56.200       224.0.0.251     16
-                  0.0.0.0   255.255.255.255     16
-            192.168.56.10    192.168.56.255     16
-           192.168.56.100    192.168.56.255     15
-             192.168.56.1    192.168.56.101     14
-                       :: ff02::1:ff32:1dce     14
-             192.168.56.1    192.168.56.201     14
-fe80::54be:a082:ff32:1dce           ff02::2     13
-           192.168.56.200        224.0.0.22     12
-fe80::54be:a082:ff32:1dce          ff02::16     11
-
-Top 15 src_ip → dst_ip → dst_port (by FP count):
-                   src_ip         dst_ip  dst_port  count
-           192.168.56.200 192.168.56.100       445   1788
-           192.168.56.100  192.168.56.10        53    310
-           192.168.56.100  192.168.56.10       389    157
-           192.168.56.100  192.168.56.10     49671    133
-           192.168.56.200  192.168.56.10       445     84
-           192.168.56.200  192.168.56.10       135     64
-           192.168.56.100  192.168.56.10     49670     61
-           192.168.56.200  192.168.56.10       389     59
-           192.168.56.100  192.168.56.10       135     43
-           192.168.56.200  192.168.56.10        53     31
-           192.168.56.100  192.168.56.10     49668     27
-           192.168.56.200 192.168.56.100        25     22
-             192.168.56.1  192.168.56.11         0     21
-fe80::54be:a082:ff32:1dce       ff02::fb      5353     16
-           192.168.56.200    224.0.0.251      5353     16
 
 Top 15 src_ip → dst_ip → application_name (by FP count):
-        src_ip          dst_ip application_name  count
-192.168.56.200  192.168.56.100   NetBIOS.SMBv23   1760
-192.168.56.100   192.168.56.10           DCERPC    261
-192.168.56.100   192.168.56.10 DNS.Microsoft365    167
-192.168.56.100   192.168.56.10             LDAP    157
-192.168.56.100   192.168.56.10    DNS.Microsoft    138
-192.168.56.200   192.168.56.10   NetBIOS.SMBv23     84
-192.168.56.200   192.168.56.10           DCERPC     67
-192.168.56.200   192.168.56.10             LDAP     59
-192.168.56.200   192.168.56.10    DNS.Microsoft     31
-192.168.56.200  192.168.56.100           SMBv23     28
-192.168.56.200  192.168.56.100             SMTP     22
-  192.168.56.1   192.168.56.11             ICMP     21
-192.168.56.200     224.0.0.251             MDNS     16
-       0.0.0.0 255.255.255.255             DHCP     16
- 192.168.56.10  192.168.56.255    NetBIOS.SMBv1     16
+        src_ip         dst_ip application_name  count
+192.168.56.200 192.168.56.100   NETBIOS.SMBV23   1758
+192.168.56.100  192.168.56.10           DCERPC    234
+192.168.56.100  192.168.56.10             LDAP    189
+192.168.56.100  192.168.56.10 DNS.MICROSOFT365    168
+192.168.56.100  192.168.56.10    DNS.MICROSOFT    137
+192.168.56.200  192.168.56.10    DNS.MICROSOFT    127
+192.168.56.200 192.168.56.100             SMTP     59
+192.168.56.200  192.168.56.10              DNS     40
+192.168.56.200 192.168.56.100           SMBV23     40
+192.168.56.100  192.168.56.10             ICMP     21
+  192.168.56.1  192.168.56.11             ICMP     21
+192.168.56.100  192.168.56.10              DNS     21
+192.168.56.100 192.168.56.255    NETBIOS.SMBV1     18
+ 192.168.56.10 192.168.56.255    NETBIOS.SMBV1     16
+192.168.56.200  192.168.56.10          UNKNOWN     15
+
+Sample FP flows (Verification):
+                src_ip          dst_ip  ...  protocol  application_name
+122645  192.168.56.200   192.168.56.10  ...        17               DNS
+33229   192.168.56.200  192.168.56.100  ...         6    NETBIOS.SMBV23
+124762  192.168.56.100   192.168.56.10  ...         6            DCERPC
+8435    192.168.56.100   192.168.56.10  ...         6              LDAP
+110933  192.168.56.200  192.168.56.100  ...         6    NETBIOS.SMBV23
+27390   192.168.56.100   192.168.56.10  ...         6              LDAP
+125974  192.168.56.200  192.168.56.100  ...         6    NETBIOS.SMBV23
+107518  192.168.56.100   192.168.56.10  ...        17  DNS.MICROSOFT365
+15305   192.168.56.200  192.168.56.100  ...         6    NETBIOS.SMBV23
+107290  192.168.56.100   192.168.56.10  ...        17              LDAP
+
+[10 rows x 6 columns]
+
+App Protocol - FP vs Detected (Top 20)
+application_name  total_detected  true_positives  false_positives  fp_rate_%
+         UNKNOWN          132645          132626               19       0.01
+        KERBEROS           15890           15890                0       0.00
+  NETBIOS.SMBV23            2256             484             1772      78.55
+            LDAP            1503            1314              189      12.57
+          DCERPC             647             411              236      36.48
+   DNS.MICROSOFT             264               0              264     100.00
+DNS.MICROSOFT365             169               0              169     100.00
+            ICMP              85              10               75      88.24
+            HTTP              83              83                0       0.00
+         NETBIOS              78              77                1       1.28
+            SMTP              77              18               59      76.62
+          SMBV23              74              28               46      62.16
+             DNS              68               7               61      89.71
+   NETBIOS.SMBV1              34               0               34     100.00
+      BITTORRENT              24              24                0       0.00
+       WHOIS-DAS              21              21                0       0.00
+             TLS              20              20                0       0.00
+             VNC              12              12                0       0.00
+             RDP              10               8                2      20.00
+       MSSQL-TDS               9               9                0       0.00
+
+Transport Proto - FP vs Detected (Top 20)
+ protocol  total_detected  true_positives  false_positives  fp_rate_%
+        6          153583          151249             2334       1.52
+       17             674             143              531      78.78
+        1              85              10               75      88.24
+Train shape: (18093, 87)
+Test  shape: (145628, 87)
+Test ground truth distribution:
+ label
+0    143556
+1      2072
+Name: count, dtype: int64
+After cleaning - Train: (18093, 71), Test: (145628, 71)
+
+=== PERFORMANCE METRICS ===
+Confusion Matrix:
+[[  7585 135971]
+ [     0   2072]]
+
+F1-Score: 0.0296
+False Positive Rate (FPR): 0.9472
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0     1.0000    0.0528    0.1004    143556
+           1     0.0150    1.0000    0.0296      2072
+
+    accuracy                         0.0663    145628
+   macro avg     0.5075    0.5264    0.0650    145628
+weighted avg     0.9860    0.0663    0.0994    145628
+
+
+=== DETAILED FALSE POSITIVE ANALYSIS ===
+Total False Positives found: 135971
+
+Top 10 FP by src_ip:
+src_ip
+192.168.66.100    131276
+192.168.56.200      3793
+192.168.56.100       827
+192.168.56.1          53
+192.168.56.10         22
+Name: count, dtype: int64
+
+Top 10 FP by dst_ip:
+dst_ip
+192.168.56.100    133207
+192.168.56.10       2675
+192.168.56.255        33
+192.168.56.11         21
+192.168.56.101        14
+192.168.56.201        14
+192.168.66.100         4
+192.168.56.200         3
+Name: count, dtype: int64
+
+Top 10 FP by dst_port:
+dst_port
+445      2126
+53       1080
+389       591
+88        350
+135       197
+49671     116
+0          92
+139        75
+49670      74
+25         69
+Name: count, dtype: int64
+
+Top 10 FP by application_name:
+application_name
+UNKNOWN             130796
+NETBIOS.SMBV23        2040
+LDAP                   595
+DNS                    459
+DNS.MICROSOFT          448
+DCERPC                 396
+KERBEROS               350
+DNS.MICROSOFT365       172
+ICMP                    92
+NETBIOS                 87
+Name: count, dtype: int64
+
+Top 15 src_ip → dst_ip → application_name (by FP count):
+        src_ip         dst_ip application_name  count
+192.168.66.100 192.168.56.100          UNKNOWN 130777
+192.168.56.200 192.168.56.100   NETBIOS.SMBV23   1834
+192.168.56.200  192.168.56.10             LDAP    437
+192.168.56.200  192.168.56.10              DNS    431
+192.168.56.200  192.168.56.10         KERBEROS    348
+192.168.56.200  192.168.56.10    DNS.MICROSOFT    286
+192.168.56.100  192.168.56.10           DCERPC    236
+192.168.56.200  192.168.56.10   NETBIOS.SMBV23    174
+192.168.56.100  192.168.56.10 DNS.MICROSOFT365    171
+192.168.56.100  192.168.56.10    DNS.MICROSOFT    162
+192.168.56.200  192.168.56.10           DCERPC    153
+192.168.56.100  192.168.56.10             LDAP    152
+192.168.66.100 192.168.56.100          NETBIOS     86
+192.168.56.200 192.168.56.100             SMTP     53
+192.168.66.100 192.168.56.100             HTTP     46
+
+Sample FP flows (Verification):
+               src_ip          dst_ip  ...  protocol  application_name
+57438  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+92761  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+19421  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+5466   192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+356    192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+64066  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+31662  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+34802  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+29707  192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+2333   192.168.66.100  192.168.56.100  ...         6           UNKNOWN
+
+[10 rows x 6 columns]
+
+App Protocol - FP vs Detected (Top 20)
+application_name  total_detected  true_positives  false_positives  fp_rate_%
+         UNKNOWN          132645            1849           130796      98.61
+  NETBIOS.SMBV23            2040               0             2040     100.00
+            LDAP             597               2              595      99.66
+             DNS             466               7              459      98.50
+   DNS.MICROSOFT             448               0              448     100.00
+          DCERPC             398               2              396      99.50
+        KERBEROS             353               3              350      99.15
+DNS.MICROSOFT365             172               0              172     100.00
+            ICMP             101               9               92      91.09
+         NETBIOS              89               2               87      97.75
+            HTTP              83              37               46      55.42
+          SMBV23              74               2               72      97.30
+            SMTP              71               3               68      95.77
+   NETBIOS.SMBV1              33               0               33     100.00
+      BITTORRENT              24               2               22      91.67
+       WHOIS-DAS              21              17                4      19.05
+             TLS              20               6               14      70.00
+             VNC              12               6                6      50.00
+             NTP              10               2                8      80.00
+             RDP              10               2                8      80.00
+
+Transport Proto - FP vs Detected (Top 20)
+ protocol  total_detected  true_positives  false_positives  fp_rate_%
+        6          136750            2056           134694      98.50
+       17            1192               7             1185      99.41
+        1             101               9               92      91.09

@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+# isolation_forest_run_fp_analysis.py
+# Train + evaluate Isolation Forest and inspect false positives
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest
+from sklearn.metrics import confusion_matrix, classification_report
+
+# === 1. Load data ===
+train_path = "data/train_set_unsupervised.csv"
+test_path  = "data/test_set_unsupervised.csv"
+
+train = pd.read_csv(train_path, low_memory=False)
+test  = pd.read_csv(test_path,  low_memory=False)
+
+print(f"Train shape: {train.shape}")
+print(f"Test  shape: {test.shape}")
+print("Test label distribution:\n", test["label"].value_counts())
+
+# === 2. Split features / labels and clean ===
+y_train = train["label"]
+y_test  = test["label"]
+
+X_train = train.drop(columns=["label"])
+X_test  = test.drop(columns=["label"])
+
+# Drop non-numeric / ID / metadata columns
+cols_to_drop = [
+    "id", "expiration_id", "src_ip", "dst_ip",
+    "src_mac", "dst_mac", "src_oui", "dst_oui",
+    "application_name", "application_category_name",
+    "requested_server_name", "client_fingerprint",
+    "server_fingerprint", "user_agent", "content_type"
+]
+X_train = X_train.drop(columns=cols_to_drop, errors="ignore")
+X_test  = X_test.drop(columns=cols_to_drop, errors="ignore")
+
+# Handle inf / NaN
+X_train = X_train.replace([np.inf, -np.inf], np.nan).dropna()
+X_test  = X_test.replace([np.inf, -np.inf], np.nan).dropna()
+
+# Realign labels with cleaned feature indices
+y_train = y_train.loc[X_train.index]
+y_test  = y_test.loc[X_test.index]
+
+print(f"After cleaning - Train: {X_train.shape}, Test: {X_test.shape}")
+
+# === 3. Scale features ===
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled  = scaler.transform(X_test)
+
+# === 4. Train Isolation Forest on NORMAL data only ===
+iso = IsolationForest(
+    n_estimators=200,
+    contamination="auto",
+    random_state=42,
+    n_jobs=-1
+)
+iso.fit(X_train_scaled)
+
+# === 5. Predict on test set ===
+# IsolationForest: 1 = normal, -1 = anomaly
+y_pred_raw = iso.predict(X_test_scaled)
+y_pred = np.where(y_pred_raw == 1, 0, 1)  # map to 0=normal, 1=attack
+
+cm = confusion_matrix(y_test, y_pred)
+print("\nConfusion matrix:\n", cm)
+
+print("\nClassification report:")
+print(classification_report(y_test, y_pred, digits=4))
+
+tn, fp_count, fn, tp = cm.ravel()
+fpr = fp_count / (fp_count + tn) if (fp_count + tn) > 0 else 0.0
+print(f"\nFalse Positive Rate (FPR): {fpr:.4f}")
+
+# === 6. False positive analysis ===
+print("\n=== FALSE POSITIVE ANALYSIS ===")
+
+# Reload full test set (with IPs, ports, app names etc.)
+test_full = pd.read_csv(test_path, low_memory=False)
+
+# Align with cleaned X_test indices
+test_full = test_full.loc[X_test.index].copy()
+test_full["y_true"] = y_test.values
+test_full["y_pred"] = y_pred
+
+# False Positives: predicted attack (1) but actually normal (0)
+fp = test_full[(test_full["y_true"] == 0) & (test_full["y_pred"] == 1)]
+print(f"False positives: {len(fp)}")
+
+if len(fp) > 0:
+    print("\nFP by src_ip:")
+    print(fp["src_ip"].value_counts().head(10))
+
+    print("\nFP by dst_ip:")
+    print(fp["dst_ip"].value_counts().head(10))
+
+    print("\nFP by dst_port:")
+    print(fp["dst_port"].value_counts().head(10))
+
+    print("\nFP by application_name:")
+    print(fp["application_name"].value_counts().head(10))
+
+    print("\nSample FP flows:")
+    print(
+        fp.sample(min(10, len(fp)), random_state=42)[[
+            "src_ip", "dst_ip", "src_port", "dst_port",
+            "protocol", "bidirectional_bytes", "bidirectional_packets",
+            "application_name", "application_category_name"
+        ]]
+    )
+
+    # === 7. Detailed FP breakdown: src → dst + protocol ===
+    print("\n=== FALSE POSITIVES: SRC → DST + PROTOCOL ===")
+
+    fp_pairs = (
+        fp.groupby(["src_ip", "dst_ip"])
+          .size()
+          .reset_index(name="count")
+          .sort_values("count", ascending=False)
+    )
+    print("\nTop 15 src_ip → dst_ip pairs (by FP count):")
+    print(fp_pairs.head(15).to_string(index=False))
+
+    fp_pairs_port = (
+        fp.groupby(["src_ip", "dst_ip", "dst_port"])
+          .size()
+          .reset_index(name="count")
+          .sort_values("count", ascending=False)
+    )
+    print("\nTop 15 src_ip → dst_ip → dst_port (by FP count):")
+    print(fp_pairs_port.head(15).to_string(index=False))
+
+    fp_pairs_app = (
+        fp.groupby(["src_ip", "dst_ip", "application_name"])
+          .size()
+          .reset_index(name="count")
+          .sort_values("count", ascending=False)
+    )
+    print("\nTop 15 src_ip → dst_ip → application_name (by FP count):")
+    print(fp_pairs_app.head(15).to_string(index=False))
+
+else:
+    print("No false positives found.")
+
+
+# === PROTOCOL-LEVEL FP VS ATTACK BREAKDOWN ===
+
+def protocol_fp_breakdown(test_full: pd.DataFrame, top_n: int = 20):
+    """
+    For each protocol / application, show:
+      - total_detected_attacks: all rows where y_pred == 1
+      - true_positives       : predicted attack AND actually attack (TP)
+      - false_positives      : predicted attack BUT actually normal (FP)
+      - fp_rate_%            : false_positives / total_detected_attacks * 100
+    """
+    # we require the true and predicted labels to already be in the frame
+    if not {"y_true", "y_pred"}.issubset(test_full.columns):
+        print("[protocol_fp_breakdown] y_true / y_pred missing on test_full")
+        return
+
+    def _one_group(df: pd.DataFrame, group_col: str, label: str):
+        if group_col not in df.columns:
+            print(f"[skip] column '{group_col}' not found.")
+            return
+
+        detected = df[df["y_pred"] == 1].copy()
+        if detected.empty:
+            print(f"No detected attacks for {label}.")
+            return
+
+        detected["_tp"] = (detected["y_true"] == 1).astype(int)
+        detected["_fp"] = (detected["y_true"] == 0).astype(int)
+
+        breakdown = (
+            detected.groupby(group_col)
+            .agg(
+                total_detected_attacks=("y_pred", "count"),
+                true_positives        =("_tp",    "sum"),
+                false_positives       =("_fp",    "sum"),
+            )
+            .reset_index()
+        )
+
+        breakdown["fp_rate_%"] = (
+            breakdown["false_positives"] / breakdown["total_detected_attacks"] * 100
+        ).round(2)
+
+        breakdown = breakdown.sort_values("total_detected_attacks", ascending=False)
+
+        print("\n" + "-" * 70)
+        print(f" {label} – FP vs detected attacks (top {top_n})")
+        print("-" * 70)
+        print(breakdown.head(top_n).to_string(index=False))
+
+    # 1) Application protocol (e.g. NetBIOS.SMBv23, HTTP, DNS)
+    _one_group(test_full, "application_name",
+               "Application protocol (application_name)")
+
+    # 2) Application category (e.g. File-Transfer, Network, System)
+    _one_group(test_full, "application_category_name",
+               "Application category (application_category_name)")
+
+    # 3) Transport protocol (TCP / UDP / ICMP), if numeric protocol column exists
+    if "protocol" in test_full.columns:
+        proto_map = {6: "TCP", 17: "UDP", 1: "ICMP", 58: "ICMPv6", 132: "SCTP"}
+        df_proto = test_full.copy()
+        df_proto["protocol_name"] = df_proto["protocol"].map(proto_map).fillna(
+            df_proto["protocol"].astype(str)
+        )
+        _one_group(df_proto, "protocol_name",
+                   "Transport protocol (protocol_name)")
+    else:
+        print("[info] 'protocol' column not present, skipping transport-level breakdown.")
+
+
+# Call the protocol-level breakdown once at the end
+protocol_fp_breakdown(test_full, top_n=20)

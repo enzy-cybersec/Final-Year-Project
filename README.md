@@ -74,6 +74,10 @@ This network is for the Normal Enterprise traffic capturing and all the AD VMs a
 	             ├── Scheduler.ps1
 	             └── Scheduler_System.ps1
 ```  
+# Attack Map/Diagram  
+<img width="614" height="405" alt="Screenshot From 2026-04-21 09-43-25" src="https://github.com/user-attachments/assets/a5cb10fa-ec70-4232-aa0f-e44a48a015e2" />
+
+
 # How to use the scripts  
 In order to use the scripts you will need to use the AD setup scripts first and then move to the population.  
 **The noise and behaviour based scripts is only for the NIDS to capture the normal traffic both in the normal network and while attack**  
